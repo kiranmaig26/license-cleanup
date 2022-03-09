@@ -1,0 +1,48 @@
+//as of now the code is to check the users in group "jira-servicedesk-users" if there are never login then we are removing the users from that group 
+
+import com.atlassian.jira.component.ComponentAccessor
+import com.atlassian.jira.user.ApplicationUser
+import com.atlassian.jira.user.util.UserManager
+import com.atlassian.crowd.embedded.api.Group
+import com.atlassian.crowd.embedded.api.CrowdService
+import com.atlassian.crowd.embedded.api.UserWithAttributes
+import com.atlassian.jira.user.util.UserUtil
+
+def groupManager = ComponentAccessor.getGroupManager()
+def userManager = ComponentAccessor.getUserManager()
+CrowdService crowdService = ComponentAccessor.crowdService
+UserUtil userUtil = ComponentAccessor.userUtil
+def count = 0;
+def usersInGroup1 = groupManager.getUsersInGroup("jira-servicedesk-users")
+def group = groupManager.getGroupObject("jira-servicedesk-users");
+def usersInAdminGroup = groupManager.getUsersInGroup("jira-administrators");
+def usersNeverLoggedIn = [];
+for (int i = 0; i < usersInGroup1.size(); i++) {
+    def user = usersInGroup1[i];
+    UserWithAttributes userWithAttributes = crowdService.getUserWithAttributes(user.getName())
+    count++;
+    if (userWithAttributes.getValue('login.lastLoginMillis') == null || userWithAttributes.getValue('login.lastLoginMillis') == '') {
+        def userIsInGroups = userUtil.getGroupNamesForUser(user.getName());
+        def isUserAdmin = false;
+        for (int j = 0; j < userIsInGroups.size(); j++) {
+            if(userIsInGroups[j] == "jira-administrators") {
+                isUserAdmin = true;
+            }
+        }
+        if (!isUserAdmin) {
+        	usersNeverLoggedIn.push(user);
+        }
+    }
+}
+def countUsersNeverLoggedIn = 0;
+for (int i = 0; i < usersNeverLoggedIn.size(); i++) {
+    countUsersNeverLoggedIn++
+}
+def usersToRemoveCount = 0;
+for (int i = 0; i < usersNeverLoggedIn.size(); i++) {
+    def userToRemove = usersNeverLoggedIn[i];
+    log.info("userToRemove.getName(): " + userToRemove.getName());
+    usersToRemoveCount++
+	//userUtil.removeUserFromGroup(group, userToRemove);
+}
+log.info(usersToRemoveCount);
