@@ -1,0 +1,288 @@
+<script>
+
+    let defaultObserverTarget = document.querySelector("#rw_customer_portal"),
+        defaultOptions = {
+            childList: true,
+            attributes: true,
+            subtree: true
+        }
+    
+    let dialogObserverTarget = document.querySelector("#jira"),
+        dialogOptions = {
+            childList: true,
+            attributes: true,
+            subtree: true
+        }
+    
+    approvalSectionObserver = new MutationObserver(approvalCallback);
+    statusSectionObserver = new MutationObserver(statusCallback);
+    requestTypeCGIObserver = new MutationObserver(cgiCallback);
+    optionalObserver = new MutationObserver(optionalCallback);
+    resolutionObserver = new MutationObserver(resolutionCallback);
+    requestListObserver = new MutationObserver(requestListCallback);
+    employeeUnknownFieldObserver = new MutationObserver(isEmployeeUnknownCallback);
+    notificationButtonObserver = new MutationObserver(notificationButtonCallback);
+    
+    // Adds message about approval and visual indication of button presses for approve/decline buttons.
+    function approvalCallback(mutations) {
+        for (let mutation of mutations) {
+            if (mutation.type === "childList" && mutation.addedNodes.length > 0) {
+                if (mutation.addedNodes[0].classList?.contains("rw_request_section")) {
+                    if (mutation.addedNodes[0].childNodes[1].id == "portal-approval-action-web-panel-root") {
+    
+                        console.log("Approval section located...");
+    
+                        var approveButton = document.querySelector(".js-approve-approval");
+                        approveButton.addEventListener('click', function () {
+                            approveButton.classList.add("buttonload");
+                            approveButton.innerHTML = "<i class='fa fa-circle-o-notch fa-spin' style='margin-right: 8px;'></i>Approving..."
+                        });
+    
+                        var declineButton = document.querySelector(".js-decline-approval");
+                        declineButton.addEventListener('click', function () {
+                            declineButton.classList.add("buttonload");
+                            declineButton.innerHTML = "<i class='fa fa-circle-o-notch fa-spin' style='margin-right: 8px;'></i>Declining..."
+                        });
+    
+                        if (document.URL.substring(document.URL.lastIndexOf('/') + 1).split('-')[0] != "HR") {
+                            var approvalSection = document.querySelector("#portal-approval-action-web-panel-root");
+                            var alert = document.createElement("p");
+                            alert.style = "margin-top: 20px;";
+                            alert.innerHTML = "<img class='emoticon' src='https://itsm.uat.ess.postnord.com/servicedesk/customershim/images/icons/emoticons/warning.png' height='16' width='16' align='absmiddle' alt='' border='0' style='margin-bottom: 3px;'> Do not approve this request unless you are satisfied that the intentions of the request are benevolent.";
+                            approvalSection.append(alert);
+    
+                            console.log("Approval buttons successfully patched!");
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    // Add message about manager not being set until after page reload for IT issues in status Request.
+    function statusCallback(mutations) {
+        for (let mutation of mutations) {
+            if (mutation.type === "childList" && mutation.addedNodes.length > 1) {
+                if (mutation.addedNodes[1].classList?.contains("rw_content_body")) {
+                    if (document.URL.substring(document.URL.lastIndexOf('/') + 1).split('-')[0] == "IT") {
+                        var statusSection = document.querySelector(".rw_request_status_container")
+    
+                        if (statusSection.firstElementChild.innerText == "REQUEST") {
+                            statusSection.style = "border-bottom: 0px;";
+                            var update = document.createElement("p");
+                            update.style = "margin: 0px; border-bottom: 3px solid rgba(0, 0, 0, 0.07); padding: 0px 0px 30px 10px";
+                            update.innerHTML = "<img class='emoticon' src='https://itsm.uat.ess.postnord.com/servicedesk/customershim/images/icons/emoticons/warning.png' height='16' width='16' align='absmiddle' alt='' border='0' style='margin-bottom: 3px;'> Please note that Approver’s name doesn’t get reflected at times. We recommend you to refresh the page to see responsible Manager for approval.";
+                            statusSection.after(update);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    // Remove pointer events from request type CGI.
+    function cgiCallback(mutations) {
+        for (let mutation of mutations) {
+            if (mutation.type === "childList" && mutation.addedNodes.length > 1) {
+                var cgi = document.querySelector("div[data-url='/servicedesk/customer/portal/2/create/299']");
+                var lonspec = document.querySelector("div[data-url='/servicedesk/customer/portal/2/create/301']");
+                var schema= document.querySelector("div[data-url='/servicedesk/customer/portal/2/create/304']");
+    
+                if (cgi != null) { cgi.style = "pointer-events: none;"; }
+                if (lonspec != null) { lonspec.style = "pointer-events: none;"; }
+                if (schema != null) { schema.style = "pointer-events: none;"; }
+            }
+        }
+    }
+    
+    // Translate (optional) tag for swedish.
+    function optionalCallback(mutations) {
+        if (document.URL.indexOf("postnord.com/plugins/servlet/desk/portal/2") != -1) {
+            for (let mutation of mutations) {
+                if (mutation.type === "childList" && mutation.addedNodes.length >= 1) {
+                    if (mutation.addedNodes[0].id == "rw_popup_dialog") {
+    
+                        var iframe = document.querySelector("#rw_iframe");
+    
+                        iframe.addEventListener("load", function () {
+    
+                            var before = document.createElement('style');
+                            before.type = 'text/css';
+                            before.innerHTML = 'span.vp-optional:before { content: " (valfritt)"; visibility: visible; }';
+                            iframe.contentWindow.document.querySelector("head").appendChild(before);
+    
+                            var style = document.createElement('style');
+                            style.type = 'text/css';
+                            style.innerHTML = 'span.vp-optional { visibility: hidden; }';
+                            iframe.contentWindow.document.querySelector("head").appendChild(style);
+    
+                        });
+                    }
+                }
+            }
+        }
+    }
+    
+        // Translate (optional) tag for swedish.
+        function optionalCallback(mutations) {
+            if (document.URL.indexOf("postnord.com/plugins/servlet/desk/portal/2") != -1) {
+                for (let mutation of mutations) {
+                    if (mutation.type === "childList" && mutation.addedNodes.length >= 1) {
+                        if (mutation.addedNodes[0].id == "rw_popup_dialog") {
+        
+                            var iframe = document.querySelector("#rw_iframe");
+        
+                            iframe.addEventListener("load", function () {
+        
+                                var before = document.createElement('style');
+                                before.type = 'text/css';
+                                before.innerHTML = 'span.vp-optional:before { content: " (valfritt)"; visibility: visible; }';
+                                iframe.contentWindow.document.querySelector("head").appendChild(before);
+        
+                                var style = document.createElement('style');
+                                style.type = 'text/css';
+                                style.innerHTML = 'span.vp-optional { visibility: hidden; }';
+                                iframe.contentWindow.document.querySelector("head").appendChild(style);
+        
+                            });
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Translate resolutions.
+        function resolutionCallback(mutations) {
+            if (document.URL.indexOf("postnord.com/plugins/servlet/desk/portal/2") != -1) {
+                for (let mutation of mutations) {
+                    if (mutation.type === "childList" && mutation.addedNodes.length >= 1) {
+                        if (mutation.addedNodes[0].classList?.contains("rw_request_comment")) {
+                            for (const b of document.querySelectorAll("b")) {
+                                if (b.textContent.includes("Done")) {
+                                    b.innerText = "Stängt";
+                                } else if (b.textContent.includes("Won't Do")) {
+                                    b.innerText = "Kommer inte att göras";
+                                } else if (b.textContent.includes("Duplicate")) {
+                                    b.innerText = "Duplicera";
+                                } else if (b.textContent.includes("Declined")) {
+                                    b.innerText = "Avböjd";
+                                } else if (b.textContent.includes("Failed")) {
+                                    b.innerText = "Misslyckades";
+                                } else if (b.textContent.includes("Reopened")) {
+                                    b.innerText = "Återöppnad";
+                                } else if (b.textContent.includes("Auto Closed")) {
+                                    b.innerText = "Förfallit";
+                                }
+                            }
+                        }
+        
+                        if (mutation.addedNodes[0].classList?.contains("rw_column_item")) {
+                            for (const b of document.querySelectorAll("h3")) {
+                                if (b.textContent.includes("Attachments")) {
+                                    b.innerText = "Bilagor";                        
+                                }
+                            }
+                        }
+        
+                    }
+                }
+            } 
+            
+            // Add resolution to issue view for project IT.
+            else if (document.URL.indexOf("postnord.com/plugins/servlet/desk/portal/1") != -1) {
+                for (let mutation of mutations) {
+                    if (mutation.type === "childList" && mutation.addedNodes.length >= 1) {
+                        if (mutation.addedNodes[0].classList?.contains("rw_request_comment")) {
+                            for (const div of document.querySelector(".rw_request_comment").querySelectorAll("div")) {
+                                if (div.textContent.includes("with resolution")) {
+                                    var resolution = div.querySelectorAll("b")[div.querySelectorAll("b").length - 1].innerText;
+                                    if (document.URL.substring(document.URL.lastIndexOf('/') + 1).split('-')[0] == "IT") {
+                                        var statusSection = document.querySelector(".rw_request_status_container")
+                                        if (statusSection.firstElementChild.innerText == "CLOSED") {
+                                            var update = document.createElement("span");
+                                            update.classList.add("rw_request_status");
+                                            update.style = "background: none; color: #000; float: right;";
+                                            update.innerHTML = "Resolution: " + resolution;
+                                            statusSection.appendChild(update);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    
+    //Change reporter label on my requests and my approvals
+    function requestListCallback(mutations) {
+        var iterations = 0;
+        var found = false;
+        if (document.URL.indexOf("postnord.com/plugins/servlet/desk/user/requests") != -1 || document.URL.indexOf("postnord.com/plugins/servlet/desk/site/global/user/approvals") != -1) {
+            for (let mutation of mutations) {
+                if (mutation.type === "childList" && mutation.addedNodes.length > 0) {
+                    for (let node of document.querySelectorAll(".rw_table_cell.rw_mobile_exclude")) {
+                        if (node.innerHTML === "Rapportör") {
+                            node.innerHTML = "Frågeställare";
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    //Hide is employee unknown checkbox
+    function isEmployeeUnknownCallback(mutations) {
+        var iterations = 0;
+        var found = false;
+        if (document.URL.indexOf("postnord.com/plugins/servlet/desk/portal/2") != -1) {
+            var caseIsFor = "";
+            var requester = "";
+            for (let mutation of mutations) {
+                if (mutation.type === "childList" && mutation.addedNodes.length > 0) {
+                    for (let node of document.querySelectorAll(".rw_item_section")) {
+                        if (node.textContent.includes("Ärendet gäller dig eller någon medarbetare/konsult i ditt team")) {
+                            var hide = node;
+                            caseIsFor = node.childNodes[2].innerText;
+                        }
+                        if (node.textContent.includes("Frågeställare")) {
+                            requester = node.childNodes[2].innerText;
+                            if (requester === caseIsFor) {
+                                hide.hidden = true;
+                            }
+                        }
+                        if (node.textContent.includes("Berör någon annan")) {
+                            node.hidden = true;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    // Hide notification button
+    function notificationButtonCallback(mutations) {
+        if (document.URL.indexOf("postnord.com/plugins/servlet/desk/portal/2") != -1) {
+            for (let mutation of mutations) {
+                if (mutation.type === "childList" && mutation.addedNodes.length >= 1) {
+                    if (mutation.addedNodes[0].classList != null && mutation.addedNodes[0].classList.contains("rw_request_section") && mutation.addedNodes[0].childNodes[0].classList) {
+                        let inner = mutation.addedNodes[0].childNodes[0].innerHTML;
+                        if (inner.includes("rw_notifications_button_watch") || inner.includes("rw_notifications_button_unwatch")) {
+                            mutation.addedNodes[0].childNodes[0].style = "display: none";
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    resolutionObserver.observe(defaultObserverTarget, defaultOptions);
+    approvalSectionObserver.observe(defaultObserverTarget, defaultOptions);
+    statusSectionObserver.observe(defaultObserverTarget, defaultOptions);
+    requestTypeCGIObserver.observe(defaultObserverTarget, defaultOptions);
+    optionalObserver.observe(dialogObserverTarget, dialogOptions);
+    requestListObserver.observe(defaultObserverTarget, defaultOptions);
+    employeeUnknownFieldObserver.observe(defaultObserverTarget, defaultOptions);
+    notificationButtonObserver.observe(defaultObserverTarget, defaultOptions);
+    
+    </script>

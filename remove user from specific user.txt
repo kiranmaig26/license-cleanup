@@ -1,0 +1,22 @@
+import com.atlassian.jira.component.ComponentAccessor
+
+// the group you want to remove users from
+final String groupName = "Jira Service Desk Customers"
+
+// user names of the users to remove
+final List<String> usersToRemove = ["Andrius Burba"]
+
+def userUtil = ComponentAccessor.userUtil
+def userManager = ComponentAccessor.userManager
+
+def group = ComponentAccessor.groupManager.getGroup(groupName)
+assert group : "Could not find group with name $groupName"
+
+usersToRemove.each {
+    def userToRemove = userManager.getUserByName(it)
+    userUtil.removeUserFromGroup(group, userToRemove)
+}
+
+
+****************************
+username.
